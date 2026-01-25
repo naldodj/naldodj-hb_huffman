@@ -24,8 +24,6 @@
 #include "hbcompat.ch"
 #include "directry.ch"
 
-#define BACK_SLASH chr(92)
-
 REQUEST HB_CODEPAGE_UTF8EX
 
 // Example usage
@@ -42,9 +40,9 @@ procedure Main()
    local nFileCount as numeric:=5
    local nFileSize as numeric:=1
 
-   #ifdef __ALT_D__    // Compile with -b -D__ALT_D__
-     AltD(1)         // Enables the debugger. Press F5 to continue.
-     AltD()          // Invokes the debugger
+   #ifdef __ALT_D__ // Compile with -b -D__ALT_D__
+     AltD(1)        // Enables the debugger. Press F5 to continue.
+     AltD()         // Invokes the debugger
    #endif
 
    hb_DirCreate(".\log\")
@@ -72,9 +70,12 @@ procedure Main()
 
 static procedure hbHuffmanTST(nSeverity as numeric)
 
+   local aFunc as array
    local aColors as array
    local aFunTst as array
 
+   local cPS as character:=hb_ps()
+   local cEOL as character:=hb_eol()
    local cText as character
    local cLogFile as character
    local cFunName as character
@@ -85,9 +86,13 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
    local lMatch as logical
 
-   local oHuffmanNode as object:=HuffmanNode():New()
-
    local i as numeric
+
+   local nLenText as numeric
+   local nLenCompressed as numeric
+   local nLenDecompressed as numeric
+
+   local oHuffmanNode as object:=HuffmanNode():New()
 
    aFunTst:=Array(0)
    aAdd(aFunTst,{@hbHuffmanTST_01(),"hbHuffmanTST_01",.T.})
@@ -98,31 +103,41 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
    aColors:=getColors(Len(aFunTst))
 
-   for i:=1 to Len(aFunTst)
+   for each aFunc in aFunTst
 
-      cText:=aFunTst[i][1]:Eval()
-      cFunName:=aFunTst[i][2]
+      i:=aFunc:__enumIndex()
+
+      cText:=aFunc[1]:Eval()
+      nLenText:=hb_bLen(cText)
+      cFunName:=aFunc[2]
 
       SetColor(aColors[i])
-      QOut("=== Test "+hb_NToC(i)+" ("+cFunName+"): ===",hb_eol())
+      QOut("=== Test "+hb_NToC(i)+" ("+cFunName+"): ===",cEOL)
       SetColor("") /* Reset color to default */
 
       hCompressed:=oHuffmanNode:HuffmanCompress(cText)
       cCompressed:=hb_JSONEncode(hCompressed)
-      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanCompress.log"
+      nLenCompressed:=hb_bLen(cCompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompress.log"
       hb_MemoWrit(cLogFile,cCompressed)
       cDecompressed:=oHuffmanNode:HuffmanDecompress(hCompressed)
-      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanDecompress.log"
+      nLenDecompressed:=hb_bLen(cDecompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompress.log"
       hb_MemoWrit(cLogFile,cDecompressed)
 
       *? "Original: ",cText
       LOG "Original: "+cText PRIORITY nSeverity
-      *? "Compressed: ",cCompressed,hb_eol()
-      *LOG "Compressed: "+cCompressed PRIORITY nSeverity
-      *? "Decompressed: ",cDecompressed,hb_eol()
-      *LOG "Decompressed: "+cDecompressed PRIORITY nSeverity
-      ? "hb_bLen(cDecompressed): ",hb_bLen(cDecompressed)
-      ? "hb_bLen(cText): ",hb_bLen(cText)
+      *? "Compressed: ",cCompressed,cEOL
+      LOG "Compressed: "+cCompressed PRIORITY nSeverity
+      *? "Decompressed: ",cDecompressed,cEOL
+      LOG "Decompressed: "+cDecompressed PRIORITY nSeverity
+
+      ? "hb_bLen(cText): ",nLenText
+      LOG "hb_bLen(cText): "+hb_NToC(nLenText) PRIORITY nSeverity
+      ? "hb_bLen(cCompressed): ",nLenCompressed
+      LOG "hb_bLen(cText): "+hb_NToC(nLenCompressed) PRIORITY nSeverity
+      ? "hb_bLen(cDecompressed): ",nLenDecompressed
+      LOG "hb_bLen(cDecompressed): "+hb_NToC(nLenDecompressed) PRIORITY nSeverity
 
       lMatch:=(cDecompressed==cText)
 
@@ -132,36 +147,37 @@ static procedure hbHuffmanTST(nSeverity as numeric)
           SetColor("r+/n")
       endif
 
-      ? "Matching: ",lMatch,hb_eol(),hb_eol()
+      ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
       SetColor("")
 
-      ? Replicate("=",80),hb_eol()
+      ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
 
       ? "CompressToBinary: "
       LOG "CompressToBinary: " PRIORITY nSeverity
 
       cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cText)
-      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanCompressToBinary.log"
+      nLenCompressed:=hb_bLen(cCompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompressToBinary.log"
       hb_MemoWrit(cLogFile,cCompressed)
-      ? "Tamanho Original: ", hb_bLen(cText)
-      LOG "Tamanho Original: "+hb_NToC(hb_bLen(cText)) PRIORITY nSeverity
-      ? "Tamanho binario:", hb_bLen(cCompressed)
-      LOG "Tamanho binario: "+hb_NToC(hb_bLen(cCompressed)) PRIORITY nSeverity
-      ? "Taxa de compressao: ", hb_NToS((1-hb_bLen(cCompressed)/hb_bLen(cText))*100,5,1)+"%"
-      LOG "Taxa de compressao: "+hb_NToS((1-hb_bLen(cCompressed)/hb_bLen(cText))*100,5,1)+"%" PRIORITY nSeverity
-      *? "Compressed: ",hb_base64encode(cCompressed),hb_eol()
+      ? "Tamanho Original: ", nLenText
+      LOG "Tamanho Original: "+hb_NToC(nLenText) PRIORITY nSeverity
+      ? "Tamanho binario:", nLenCompressed
+      LOG "Tamanho binario: "+hb_NToC(nLenCompressed) PRIORITY nSeverity
+      ? "Taxa de compressao: ", hb_NToS((1-nLenCompressed/nLenText)*100,5,1)+"%"
+      LOG "Taxa de compressao: "+hb_NToS((1-nLenCompressed/nLenText)*100,5,1)+"%" PRIORITY nSeverity
+      *? "Compressed: ",hb_base64encode(cCompressed),cEOL
       *LOG "Compressed: "+cCompressed PRIORITY nSeverity
 
       cDecompressed:=oHuffmanNode:HuffmanDecompressFromBinary(cCompressed)
-      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanDecompressFromBinary.log"
+      nLenDecompressed:=hb_BLen(cDecompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompressFromBinary.log"
       hb_MemoWrit(cLogFile,cDecompressed)
       *? "Descomprimido: ", cDecompressed
       LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
-      ? "hb_bLen(cDecompressed): ",hb_bLen(cDecompressed)
-      ? "hb_bLen(cText): ",hb_bLen(cText)
+      ? "hb_bLen(cDecompressed): ",nLenDecompressed
 
       lMatch:=(cDecompressed==cText)
 
@@ -171,15 +187,15 @@ static procedure hbHuffmanTST(nSeverity as numeric)
           SetColor("r+/n")
       endif
 
-      ? "Matching: ",lMatch,hb_eol(),hb_eol()
+      ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
       SetColor("")
 
-      ? Replicate("=",80),hb_eol()
+      ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
 
-   next i
+   next //each
 
    return
 
