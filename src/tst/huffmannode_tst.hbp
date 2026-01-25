@@ -2,6 +2,17 @@
 
 -cpp
 
+# Bibliotecas essenciais
+xhb.hbc
+hbct.hbc
+{win}hbwin.hbc
+hbmzip.hbc
+
+{win}-lucrt
+
+{win}-ldflag=/NODEFAULTLIB:msvcrt
+{win}-ldflag+=/NODEFAULTLIB:libucrt
+
 ./huffmannode.prg
 ./huffmannode_tst.prg
 

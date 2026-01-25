@@ -1,16 +1,27 @@
 /*
- _              __   __                                             _           _         _
-| |__   _   _  / _| / _| _ __ ___    __ _  _ __   _ __    ___    __| |  ___    | |_  ___ | |_
-| '_ \ | | | || |_ | |_ | '_ ` _ \  / _` || '_ \ | '_ \  / _ \  / _` | / _ \   | __|/ __|| __|
-| | | || |_| ||  _||  _|| | | | | || (_| || | | || | | || (_) || (_| ||  __/   | |_ \__ \| |_
-|_| |_| \__,_||_|  |_|  |_| |_| |_| \__,_||_| |_||_| |_| \___/  \__,_| \___|    \__||___/ \__|
+ _              __   __                                             _         _         _
+| |__   _   _  / _| / _| _ __ ___    __ _  _ __   _ __    ___    __| |  ___  | |_  ___ | |_
+| '_ \ | | | || |_ | |_ | '_ ` _ \  / _` || '_ \ | '_ \  / _ \  / _` | / _ \ | __|/ __|| __|
+| | | || |_| ||  _||  _|| | | | | || (_| || | | || | | || (_) || (_| ||  __/ | |_ \__ \| |_
+|_| |_| \__,_||_|  |_|  |_| |_| |_| \__,_||_| |_||_| |_| \___/  \__,_| \___| \__| |___/\__|
 
  Example usage with valid and invalid test cases.
 
  Released to Public Domain.
  --------------------------------------------------------------------------------------
 
+  hb_syslog.prg: Released to Public Domain.
+  --------------------------------------------------------------------------------------
+  ref.: ./github/harbour-core/contrib/xhb/hblog.ch
+        ./github/harbour-core/contrib/xhb/hblog.prg
+        ./github/harbour-core/contrib/xhb/hblognet.prg
+
+
 */
+
+#include "hblog.ch"
+#include "hbinkey.ch"
+#include "hbcompat.ch"
 
 REQUEST HB_CODEPAGE_UTF8EX
 
@@ -18,6 +29,14 @@ REQUEST HB_CODEPAGE_UTF8EX
 procedure Main()
 
    local cCDP as character
+   local cLogFile as character:=("huffmannode_tst.log")
+
+   local nKoef as numeric
+   local nStyle as numeric:=(HB_LOG_ST_DATE+HB_LOG_ST_ISODATE+HB_LOG_ST_TIME+HB_LOG_ST_LEVEL)
+   local nSeverity as numeric:=HB_LOG_DEBUG
+   local nFileCount as numeric:=5
+   local nFileSize as numeric:=1
+   local nFileSizeType as numeric:=2
 
    #ifdef __ALT_D__    // Compile with -b -D__ALT_D__
      AltD(1)         // Enables the debugger. Press F5 to continue.
@@ -28,13 +47,21 @@ procedure Main()
 
    CLS
 
-   hbHuffmanTST()
+   nKoef:=if((nFileSizeType==1),1,if((nFileSizeType==2),1024,(1024^2)))
+   nFileSize:=(nFileSize*nKoef)
+
+   INIT LOG ON FILE (nSeverity,cLogFile,nFileSize,nFileCount)
+   SET LOG STYLE (nStyle)
+
+   hbHuffmanTST(nSeverity)
+
+   CLOSE LOG
 
    hb_cdpSelect(cCDP)
 
    return
 
-static procedure hbHuffmanTST()
+static procedure hbHuffmanTST(nSeverity as numeric)
 
    local aColors as array
    local aFunTst as array
@@ -74,8 +101,11 @@ static procedure hbHuffmanTST()
       cDecompressed:=oHuffmanNode:HuffmanDecompress(hCompressed)
 
       ? "Original: ",cText
+      LOG "Original: "+cText PRIORITY nSeverity
       ? "Compressed: ",cCompressed,hb_eol()
+      LOG "Compressed: "+cCompressed PRIORITY nSeverity
       ? "Decompressed: ",cDecompressed,hb_eol()
+      LOG "Decompressed: "+cDecompressed PRIORITY nSeverity
 
       lMatch:=(cDecompressed==cText)
 
@@ -86,10 +116,45 @@ static procedure hbHuffmanTST()
       endif
 
       ? "Matching: ",(cDecompressed==cText),hb_eol(),hb_eol()
+      LOG "Matching: "+if((cDecompressed==cText),"TRUE","FALSE") PRIORITY nSeverity
 
       SetColor("")
 
       ? Replicate("=",80),hb_eol()
+      LOG Replicate("=",80) PRIORITY nSeverity
+
+      ? "CompressToBinary: "
+      LOG "CompressToBinary: " PRIORITY nSeverity
+
+      cCompressed:=oHuffmanNode:CompressToBinary(cText)
+      ? "Tamanho Original: ", Len(cText)
+      LOG "Tamanho Original: "+hb_NToC(Len(cText)) PRIORITY nSeverity
+      ? "Tamanho binario:", Len(cCompressed)
+      LOG "Tamanho binario: "+hb_NToC(Len(cCompressed)) PRIORITY nSeverity
+      ? "Taxa de compressao: ", hb_NToS((1-Len(cCompressed)/Len(cText))*100,5,1)+"%"
+      LOG "Taxa de compressao: "+hb_NToS((1-Len(cCompressed)/Len(cText))*100,5,1)+"%" PRIORITY nSeverity
+      ? "Compressed: ",hb_base64encode(cCompressed),hb_eol()
+      LOG "Compressed: "+cCompressed PRIORITY nSeverity
+
+      cDecompressed:=oHuffmanNode:DecompressFromBinary(cCompressed)
+      ? "Descomprimido: ", cDecompressed
+      LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
+
+      lMatch:=(cDecompressed==cText)
+
+      if (lMatch)
+          SetColor("g+/n")
+      else
+          SetColor("r+/n")
+      endif
+
+      ? "Matching: ",(cDecompressed==cText),hb_eol(),hb_eol()
+      LOG "Matching: "+if((cDecompressed==cText),"TRUE","FALSE") PRIORITY nSeverity
+
+      SetColor("")
+
+      ? Replicate("=",80),hb_eol()
+      LOG Replicate("=",80) PRIORITY nSeverity
 
    next i
 

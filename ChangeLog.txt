@@ -1,7 +1,20 @@
 /* Encoding: UTF-8 (No BOM)  Notation (in 5th column):
      * Change  ! Fix  % Optimize  + Add  - Remove  ; Comment
    Entries may not always be in chronological/commit order.
-   See license at the end of file. */
+   See license at the end of file.
+   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Add binary Huffman compression and logging to tests)"
+*/
+
+2026-01-25 00:30 UTC naldodj (Add binary Huffman compression and logging to tests)
+  Introduces new CompressToBinary and DecompressFromBinary methods to HuffmanNode with C implementations for efficient binary Huffman compression and decompression.
+  Updates the test suite to log results, compression ratios, and matching status using a rotating log file.
+  Adds build and utility scripts, updates .gitignore, and enhances the test project configuration for Windows builds.
+  * .gitignore
+  * bin/findnoasciicharacters.ps1
+  * src/core/huffmannode.prg
+  * src/tst/huffmannode_tst.exe
+  * src/tst/huffmannode_tst.hbp
+  * src/tst/huffmannode_tst.prg
 
 2025-04-01 12:19 UTC naldodj
   * src/core/huffmannode.prg
