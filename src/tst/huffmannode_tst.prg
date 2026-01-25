@@ -81,6 +81,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
    local cFunName as character
    local cCompressed as character
    local cDecompressed as character
+   local cTextcCompressed as character
 
    local hCompressed as hash
 
@@ -90,6 +91,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
    local nLenText as numeric
    local nLenCompressed as numeric
+   local nLenTextCompressed as numeric
    local nLenDecompressed as numeric
 
    local oHuffmanNode as object:=HuffmanNode():New()
@@ -155,8 +157,53 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
 
-      ? "CompressToBinary: "
-      LOG "CompressToBinary: " PRIORITY nSeverity
+      ? Replicate("=",80),cEOL
+      LOG Replicate("=",80) PRIORITY nSeverity
+
+      ? "Compress From HuffmanCompress: ("+cFunName+")"
+      LOG "Compress From HuffmanCompress: ("+cFunName+")" PRIORITY nSeverity
+
+      cTextcCompressed:=cCompressed
+      nLenTextCompressed:=hb_bLen(cTextcCompressed)
+      cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cTextcCompressed)
+      nLenCompressed:=hb_bLen(cCompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompressToBinary.log"
+      hb_MemoWrit(cLogFile,cCompressed)
+      ? "Tamanho Original: ", nLenTextCompressed
+      LOG "Tamanho Original: "+hb_NToC(nLenTextCompressed) PRIORITY nSeverity
+      ? "Tamanho binario:", nLenCompressed
+      LOG "Tamanho binario: "+hb_NToC(nLenCompressed) PRIORITY nSeverity
+      ? "Taxa de compressao: ", hb_NToS((1-nLenCompressed/nLenTextCompressed)*100,5,1)+"%"
+      LOG "Taxa de compressao: "+hb_NToS((1-nLenCompressed/nLenTextCompressed)*100,5,1)+"%" PRIORITY nSeverity
+      *? "Compressed: ",hb_base64encode(cCompressed),cEOL
+      *LOG "Compressed: "+cCompressed PRIORITY nSeverity
+
+      cDecompressed:=oHuffmanNode:HuffmanDecompressFromBinary(cCompressed)
+      nLenDecompressed:=hb_BLen(cDecompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompressFromBinary.log"
+      hb_MemoWrit(cLogFile,cDecompressed)
+      *? "Descomprimido: ", cDecompressed
+      LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
+      ? "hb_bLen(cDecompressed): ",nLenDecompressed
+
+      lMatch:=(cDecompressed==cTextcCompressed)
+
+      if (lMatch)
+          SetColor("g+/n")
+      else
+          SetColor("r+/n")
+      endif
+
+      ? "Matching: ",lMatch,cEOL,cEOL
+      LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
+
+      SetColor("")
+
+      ? Replicate("=",80),cEOL
+      LOG Replicate("=",80) PRIORITY nSeverity
+
+      ? "CompressToBinary: ("+cFunName+")"
+      LOG "CompressToBinary: ("+cFunName+")" PRIORITY nSeverity
 
       cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cText)
       nLenCompressed:=hb_bLen(cCompressed)
