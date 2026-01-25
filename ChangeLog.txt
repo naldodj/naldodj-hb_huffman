@@ -2,8 +2,17 @@
      * Change  ! Fix  % Optimize  + Add  - Remove  ; Comment
    Entries may not always be in chronological/commit order.
    See license at the end of file.
-   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Refactor and optimize HuffmanNode binary compression)"
+   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Fix log file paths and update test data file extensions)"
 */
+
+2026-01-25 20:15 UTC naldodj (Fix log file paths and update test data file extensions)
+  Fix log file paths and update test data file extensions
+    Replaced hardcoded backslashes in log file paths with a BACK_SLASH constant for better portability and maintainability.
+    Updated test data file extensions from .log to .txt for loremipsum and emoji-data files.
+    Updated binary and hash files to reflect these changes.
+    * src/tst/huffmannode_tst.exe
+    * src/tst/huffmannode_tst.prg
+    * src/tst/huffmannode_tst.sha256
 
 2026-01-25 20:04 UTC naldodj (Refactor and optimize HuffmanNode binary compression)
   Refactor and optimize HuffmanNode binary compression

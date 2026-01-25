@@ -24,6 +24,8 @@
 #include "hbcompat.ch"
 #include "directry.ch"
 
+#define BACK_SLASH chr(92)
+
 REQUEST HB_CODEPAGE_UTF8EX
 
 // Example usage
@@ -74,6 +76,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
    local aFunTst as array
 
    local cText as character
+   local cLogFile as character
    local cFunName as character
    local cCompressed as character
    local cDecompressed as character
@@ -106,9 +109,11 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
       hCompressed:=oHuffmanNode:HuffmanCompress(cText)
       cCompressed:=hb_JSONEncode(hCompressed)
-      hb_MemoWrit(".\log\"+cFunName+"_HuffmanCompress.log",cCompressed)
+      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanCompress.log"
+      hb_MemoWrit(cLogFile,cCompressed)
       cDecompressed:=oHuffmanNode:HuffmanDecompress(hCompressed)
-      hb_MemoWrit(".\log\"+cFunName+"_HuffmanDecompress.log",cDecompressed)
+      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanDecompress.log"
+      hb_MemoWrit(cLogFile,cDecompressed)
 
       *? "Original: ",cText
       LOG "Original: "+cText PRIORITY nSeverity
@@ -139,7 +144,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       LOG "CompressToBinary: " PRIORITY nSeverity
 
       cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cText)
-      hb_MemoWrit(".\log\"+cFunName+"_HuffmanCompressToBinary.log",cCompressed)
+      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanCompressToBinary.log"
+      hb_MemoWrit(cLogFile,cCompressed)
       ? "Tamanho Original: ", hb_bLen(cText)
       LOG "Tamanho Original: "+hb_NToC(hb_bLen(cText)) PRIORITY nSeverity
       ? "Tamanho binario:", hb_bLen(cCompressed)
@@ -150,7 +156,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       *LOG "Compressed: "+cCompressed PRIORITY nSeverity
 
       cDecompressed:=oHuffmanNode:HuffmanDecompressFromBinary(cCompressed)
-      hb_MemoWrit(".\log\"+cFunName+"_HuffmanDecompressFromBinary.log",cDecompressed)
+      cLogFile:="."+BACK_SLASH+"log"+BACK_SLASH+cFunName+"_HuffmanDecompressFromBinary.log"
+      hb_MemoWrit(cLogFile,cDecompressed)
       *? "Descomprimido: ", cDecompressed
       LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
       ? "hb_bLen(cDecompressed): ",hb_bLen(cDecompressed)
@@ -213,8 +220,8 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     local cText as character
 
-    if (hb_FileExists("./data/loremipsum.log"))
-        cText:=hb_MemoRead("./data/loremipsum.log")
+    if (hb_FileExists("./data/loremipsum.txt"))
+        cText:=hb_MemoRead("./data/loremipsum.txt")
     else
         cText:=ProcName()
     endif
@@ -237,8 +244,8 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     local cText as character
 
-    if (hb_FileExists("./data/emoji-data.log"))
-        cText:=hb_MemoRead("./data/emoji-data.log")
+    if (hb_FileExists("./data/emoji-data.txt"))
+        cText:=hb_MemoRead("./data/emoji-data.txt")
     else
         cText:=ProcName()
     endif
