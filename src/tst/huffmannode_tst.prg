@@ -32,28 +32,29 @@ procedure Main()
    local aLogs as array
 
    local cCDP as character
-   local cLogFile as character:=("huffmannode_tst.log")
+   local cLogFile as character:=(".\log\huffmannode_tst.log")
 
    local nKoef as numeric
    local nStyle as numeric:=(HB_LOG_ST_DATE+HB_LOG_ST_ISODATE+HB_LOG_ST_TIME+HB_LOG_ST_LEVEL)
    local nSeverity as numeric:=HB_LOG_DEBUG
    local nFileCount as numeric:=5
    local nFileSize as numeric:=1
-   local nFileSizeType as numeric:=2
 
    #ifdef __ALT_D__    // Compile with -b -D__ALT_D__
      AltD(1)         // Enables the debugger. Press F5 to continue.
      AltD()          // Invokes the debugger
    #endif
 
-   aLogs:=Directory("*.log*")
-   aEval(aLogs,{|e|hb_FileDelete(e[F_NAME])})
+   hb_DirCreate(".\log\")
+
+   aLogs:=Directory(".\log\*.*")
+   aEval(aLogs,{|e|hb_FileDelete(".\log\"+e[F_NAME])})
 
    cCDP:=hb_cdpSelect("UTF8EX")
 
    CLS
 
-   nKoef:=if((nFileSizeType==1),1,if((nFileSizeType==2),1024,(1024^2)))
+   nKoef:=(1024^4)
    nFileSize:=(nFileSize*nKoef)
 
    INIT LOG ON FILE (nSeverity,cLogFile,nFileSize,nFileCount)
@@ -90,6 +91,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
    aAdd(aFunTst,{@hbHuffmanTST_02(),"hbHuffmanTST_02",.T.})
    aAdd(aFunTst,{@hbHuffmanTST_03(),"hbHuffmanTST_03",.T.})
    aAdd(aFunTst,{@hbHuffmanTST_04(),"hbHuffmanTST_04",.T.})
+   aAdd(aFunTst,{@hbHuffmanTST_05(),"hbHuffmanTST_05",.T.})
 
    aColors:=getColors(Len(aFunTst))
 
@@ -104,14 +106,18 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
       hCompressed:=oHuffmanNode:HuffmanCompress(cText)
       cCompressed:=hb_JSONEncode(hCompressed)
+      hb_MemoWrit(".\log\"+cFunName+"_HuffmanCompress.log",cCompressed)
       cDecompressed:=oHuffmanNode:HuffmanDecompress(hCompressed)
+      hb_MemoWrit(".\log\"+cFunName+"_HuffmanDecompress.log",cDecompressed)
 
-      ? "Original: ",cText
+      *? "Original: ",cText
       LOG "Original: "+cText PRIORITY nSeverity
-      ? "Compressed: ",cCompressed,hb_eol()
-      LOG "Compressed: "+cCompressed PRIORITY nSeverity
-      ? "Decompressed: ",cDecompressed,hb_eol()
-      LOG "Decompressed: "+cDecompressed PRIORITY nSeverity
+      *? "Compressed: ",cCompressed,hb_eol()
+      *LOG "Compressed: "+cCompressed PRIORITY nSeverity
+      *? "Decompressed: ",cDecompressed,hb_eol()
+      *LOG "Decompressed: "+cDecompressed PRIORITY nSeverity
+      ? "hb_bLen(cDecompressed): ",hb_bLen(cDecompressed)
+      ? "hb_bLen(cText): ",hb_bLen(cText)
 
       lMatch:=(cDecompressed==cText)
 
@@ -132,19 +138,23 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "CompressToBinary: "
       LOG "CompressToBinary: " PRIORITY nSeverity
 
-      cCompressed:=oHuffmanNode:CompressToBinary(cText)
-      ? "Tamanho Original: ", Len(cText)
-      LOG "Tamanho Original: "+hb_NToC(Len(cText)) PRIORITY nSeverity
-      ? "Tamanho binario:", Len(cCompressed)
-      LOG "Tamanho binario: "+hb_NToC(Len(cCompressed)) PRIORITY nSeverity
-      ? "Taxa de compressao: ", hb_NToS((1-Len(cCompressed)/Len(cText))*100,5,1)+"%"
-      LOG "Taxa de compressao: "+hb_NToS((1-Len(cCompressed)/Len(cText))*100,5,1)+"%" PRIORITY nSeverity
-      ? "Compressed: ",hb_base64encode(cCompressed),hb_eol()
-      LOG "Compressed: "+cCompressed PRIORITY nSeverity
+      cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cText)
+      hb_MemoWrit(".\log\"+cFunName+"_HuffmanCompressToBinary.log",cCompressed)
+      ? "Tamanho Original: ", hb_bLen(cText)
+      LOG "Tamanho Original: "+hb_NToC(hb_bLen(cText)) PRIORITY nSeverity
+      ? "Tamanho binario:", hb_bLen(cCompressed)
+      LOG "Tamanho binario: "+hb_NToC(hb_bLen(cCompressed)) PRIORITY nSeverity
+      ? "Taxa de compressao: ", hb_NToS((1-hb_bLen(cCompressed)/hb_bLen(cText))*100,5,1)+"%"
+      LOG "Taxa de compressao: "+hb_NToS((1-hb_bLen(cCompressed)/hb_bLen(cText))*100,5,1)+"%" PRIORITY nSeverity
+      *? "Compressed: ",hb_base64encode(cCompressed),hb_eol()
+      *LOG "Compressed: "+cCompressed PRIORITY nSeverity
 
-      cDecompressed:=oHuffmanNode:DecompressFromBinary(cCompressed)
-      ? "Descomprimido: ", cDecompressed
+      cDecompressed:=oHuffmanNode:HuffmanDecompressFromBinary(cCompressed)
+      hb_MemoWrit(".\log\"+cFunName+"_HuffmanDecompressFromBinary.log",cDecompressed)
+      *? "Descomprimido: ", cDecompressed
       LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
+      ? "hb_bLen(cDecompressed): ",hb_bLen(cDecompressed)
+      ? "hb_bLen(cText): ",hb_bLen(cText)
 
       lMatch:=(cDecompressed==cText)
 
@@ -203,8 +213,8 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     local cText as character
 
-    if (hb_FileExists("./data/loremipsum.txt"))
-        cText:=hb_MemoRead("./data/loremipsum.txt")
+    if (hb_FileExists("./data/loremipsum.log"))
+        cText:=hb_MemoRead("./data/loremipsum.log")
     else
         cText:=ProcName()
     endif
@@ -217,6 +227,18 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     if (hb_FileExists("./huffmannode.prg"))
         cText:=hb_MemoRead("./huffmannode.prg")
+    else
+        cText:=ProcName()
+    endif
+
+    return(cText)
+
+    static function hbHuffmanTST_05()
+
+    local cText as character
+
+    if (hb_FileExists("./data/emoji-data.log"))
+        cText:=hb_MemoRead("./data/emoji-data.log")
     else
         cText:=ProcName()
     endif

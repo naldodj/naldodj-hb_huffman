@@ -39,8 +39,8 @@ class HuffmanNode
    method HuffmanDecompress(hCompressed as hash) as character
 
   /* Novos metodos para compressao binaria */
-   method CompressToBinary(cText as character) as character
-   method DecompressFromBinary(cBinary as character) as character
+   method HuffmanCompressToBinary(cText as character) as character
+   method HuffmanDecompressFromBinary(cBinary as character) as character
 
 end class
 
@@ -284,23 +284,58 @@ method UnpackBitsFromIntegers(aPacked as array) class HuffmanNode
    return(cBits) as character
 
 /* Metodos novos para compressao binaria */
-method CompressToBinary(cText as character) class HuffmanNode
+method HuffmanCompressToBinary(cText as character) class HuffmanNode
+
+   local aBinary as array:=Array(0)
+   local cChunk as character
+   local nPos as numeric:=1
+   local nLen as numeric:=hb_BLen(cText)
+   local nChunkSize as numeric:=32768  // 32KB por pacote para melhor compressao
+
    if (Empty(cText))
       return("")
    endif
-   return(HB_HUFFMAN_PACK(cText))
 
-method DecompressFromBinary(cBinary as character) class HuffmanNode
+   // Dividir o texto em chunks otimizados
+   while (nPos <= nLen)
+      if (nPos + nChunkSize - 1 > nLen)
+         nChunkSize := nLen - nPos + 1
+      endif
+
+      cChunk := hb_BSubStr(cText, nPos, nChunkSize)
+      cChunk := HB_HUFFMAN_PACK(cChunk)
+
+      if (!Empty(cChunk))
+         aAdd(aBinary, cChunk)
+      endif
+
+      nPos += nChunkSize
+   end while
+
+   return(hb_Serialize(aBinary))
+
+method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
+
+   local aBinary as array
+   local cChunk as character
+   local cText as character:=""
+
    if (Empty(cBinary))
-      return("")
+      return(cText)
    endif
-   return(HB_HUFFMAN_UNPACK(cBinary))
+
+   aBinary:=hb_DeSerialize(cBinary)
+   FOR EACH cChunk IN aBinary
+      cText += HB_HUFFMAN_UNPACK(cChunk)
+   NEXT
+
+   return(cText)
 
 #pragma BEGINDUMP
 
-   #include "ct.h"
    #include "hbapi.h"
    #include "hbapiitm.h"
+   #include "hbapierr.h"
    #include <string.h>
    #include <stdlib.h>
    #include <limits.h>
@@ -314,65 +349,116 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
 
    HB_FUNC_STATIC(STROCCURS)
    {
-      if (HB_ISCHAR(1) && HB_ISCHAR(2) && HB_ISBYREF(2))
-      {
-         const char *s1 = hb_parc(1);
-         char *s2 = hb_itemGetC(hb_param(2,HB_IT_STRING));
-         HB_ISIZ len = hb_parclen(2);
-         HB_ISIZ count = 0;
-         HB_ISIZ newLen = 0;
+      PHB_ITEM pText1 = hb_param(1, HB_IT_STRING);
+      PHB_ITEM pText2 = hb_param(2, HB_IT_STRING);
 
-         for (HB_ISIZ i = 0; i < len; i++)
+      if( pText1 && pText2 && HB_ISBYREF(2) )
+      {
+         const char *s1 = hb_itemGetCPtr(pText1);
+         const char *s2 = hb_itemGetCPtr(pText2);
+         HB_SIZE len = hb_itemGetCLen(pText2);
+         HB_SIZE count = 0;
+         HB_SIZE newLen = 0;
+
+         /* Alocar buffer temporario */
+         char *tempBuffer = (char*) hb_xgrab(len + 1);
+         if( !tempBuffer )
          {
-            if (s1[0]==s2[i])
-               count++;
-            else
-               s2[newLen++] = s2[i];
+            hb_errRT_BASE_SubstR(EG_MEM, 3012, NULL, "STROCCURS", HB_ERR_ARGS_BASEPARAMS);
+            return;
          }
 
-         hb_storclen(s2,newLen,2);
-         hb_xfree(s2);
+         /* Processar string */
+         for( HB_SIZE i = 0; i < len; i++ )
+         {
+            if( s1[0] == s2[i] )
+               count++;
+            else
+               tempBuffer[newLen++] = s2[i];
+         }
+
+         /* Atualizar string de referencia */
+         if( newLen > 0 )
+         {
+            hb_storclen(tempBuffer, newLen, 2);
+         }
+         else
+         {
+            hb_storc("", 2);
+         }
+
+         hb_xfree(tempBuffer);
          hb_retns(count);
       }
       else
-         hb_retns(0);
+      {
+         hb_errRT_BASE_SubstR(EG_ARG, 3012, NULL, "STROCCURS", HB_ERR_ARGS_BASEPARAMS);
+      }
    }
 
    HB_FUNC_STATIC(PACKBITSTOINTEGERS)
    {
-      if (HB_ISCHAR(1) && HB_ISNUM(2))
+      PHB_ITEM pBits = hb_param(1, HB_IT_STRING);
+      PHB_ITEM pBitLen = hb_param(2, HB_IT_NUMERIC);
+
+      if( pBits && pBitLen )
       {
-         const char *cBits = hb_parc(1);
-         long nBitLen = hb_parnl(2);
-         HB_ISIZ i,bufferLen = 0;
+         const char *cBits = hb_itemGetCPtr(pBits);
+         long nBitLen = hb_itemGetNL(pBitLen);
+         HB_ISIZ i, bufferLen = 0;
          HB_MAXUINT buffer = 0;
-         PHB_ITEM aOut = hb_itemArrayNew((nBitLen+63) / 64+1);
+         HB_ISIZ arraySize = (nBitLen + 63) / 64 + 1;
 
-         hb_arraySetNL(aOut,1,nBitLen);
-
-         for (i = 0; i < nBitLen; i++)
+         /* Verificar se o tamanho da string corresponde ao nBitLen */
+         HB_ISIZ actualLen = hb_itemGetCLen(pBits);
+         if( (HB_ISIZ) nBitLen > actualLen )
          {
-            buffer = (buffer << 1) | (cBits[i]=='1' ? 1 : 0);
-            if (++bufferLen >= 64)
+            hb_errRT_BASE_SubstR(EG_BOUND, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+            return;
+         }
+
+         PHB_ITEM aOut = hb_itemArrayNew(arraySize);
+         if( !aOut )
+         {
+            hb_errRT_BASE_SubstR(EG_MEM, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+            return;
+         }
+
+         hb_arraySetNL(aOut, 1, nBitLen);
+
+         for( i = 0; i < nBitLen; i++ )
+         {
+            buffer = (buffer << 1) | (cBits[i] == '1' ? 1 : 0);
+            if( ++bufferLen >= 64 )
             {
-               hb_arraySetNInt(aOut,(i / 64)+2,buffer);
+               hb_arraySetNInt(aOut, (i / 64) + 2, buffer);
                buffer = 0;
                bufferLen = 0;
             }
          }
 
-         if (bufferLen>0)
-            hb_arraySetNInt(aOut,(nBitLen / 64)+2,buffer << (64 - bufferLen));
+         if( bufferLen > 0 )
+         {
+            hb_arraySetNInt(aOut, (nBitLen / 64) + 2, buffer << (64 - bufferLen));
+         }
 
          hb_itemReturnRelease(aOut);
       }
       else
-         hb_ret();
+      {
+         hb_errRT_BASE_SubstR(EG_ARG, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+      }
    }
 
    /* =================================================== */
    /* C HUFFMAN                                           */
    /* =================================================== */
+
+   /* LIMITES OTIMIZADOS PARA PERFORMANCE E ESTABILIDADE */
+   #define MAX_TREE_SIZE       65536      /* 64KB para arvore */
+   #define MAX_INPUT_SIZE      65536      /* 64KB entrada maxima */
+   #define MAX_COMPRESSED_SIZE 131072     /* 128KB comprimido maximo */
+   #define MAX_OUTPUT_SIZE     65536      /* 64KB saida maxima */
 
    /* Tabela de codigos Huffman */
    typedef struct {
@@ -406,14 +492,23 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
    /* Inicializa bit writer */
    static BIT_WRITER* bit_writer_init(int capacity) {
        BIT_WRITER* bw = (BIT_WRITER*)hb_xgrab(sizeof(BIT_WRITER));
+       if( !bw ) return NULL;
+
+       /* Capacidade otimizada */
+       if( capacity < 1024 ) capacity = 1024;
+       if( capacity > MAX_COMPRESSED_SIZE ) capacity = MAX_COMPRESSED_SIZE;
+
        bw->data = (unsigned char*)hb_xgrab(capacity);
+       if( !bw->data ) {
+           hb_xfree(bw);
+           return NULL;
+       }
+
        bw->bit_pos = 0;
        bw->byte_pos = 0;
        bw->capacity = capacity;
 
-       /* Zera a memoria usando hb_xmemcpy com fonte NULL? */
-       /* Melhor usar memset ou hb_xmemset se existir */
-       memset(bw->data, 0, capacity); /* memset e OK aqui */
+       hb_xmemset(bw->data, 0, capacity);
        return bw;
    }
 
@@ -428,15 +523,21 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
    /* Escreve um bit */
    static void bit_writer_write(BIT_WRITER* bw, int bit) {
        if(bw->byte_pos >= bw->capacity) {
-           /* Expande buffer usando hb_xgrab/hb_xmemcpy */
+           /* Expande buffer */
            int new_capacity = bw->capacity * 2;
+           if( new_capacity > MAX_COMPRESSED_SIZE ) {
+               new_capacity = MAX_COMPRESSED_SIZE;
+           }
+
+           if( new_capacity <= bw->capacity ) {
+               return;
+           }
+
            unsigned char* new_data = (unsigned char*)hb_xgrab(new_capacity);
+           if( !new_data ) return;
 
-           /* Copia dados antigos */
            hb_xmemcpy(new_data, bw->data, bw->capacity);
-
-           /* Zera nova area */
-           memset(new_data + bw->capacity, 0, new_capacity - bw->capacity);
+           hb_xmemset(new_data + bw->capacity, 0, new_capacity - bw->capacity);
 
            hb_xfree(bw->data);
            bw->data = new_data;
@@ -505,7 +606,7 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
    static void free_tree(HUFFMAN_NODE* root) {
        if(root == NULL) return;
 
-       HUFFMAN_NODE** stack = (HUFFMAN_NODE**)hb_xgrab(1000 * sizeof(HUFFMAN_NODE*));
+       HUFFMAN_NODE** stack = (HUFFMAN_NODE**)hb_xgrab(MAX_TREE_SIZE * sizeof(HUFFMAN_NODE*));
        int top = 0;
 
        stack[top++] = root;
@@ -540,7 +641,7 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
        return node;
    }
 
-   /* Constroi arvore Huffman */
+   /* Constroi arvore Huffman otimizada */
    static HUFFMAN_NODE* build_tree(int* freq) {
        HUFFMAN_NODE* nodes[256];
        HUFFMAN_NODE* left, *right, *parent;
@@ -549,6 +650,7 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
        for(i = 0; i < 256; i++) {
            if(freq[i] > 0) {
                nodes[n++] = create_node((unsigned char)i, freq[i]);
+               if( n >= 256 ) break;
            }
        }
 
@@ -556,6 +658,7 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
        if(n == 1) return nodes[0];
 
        while(n > 1) {
+           /* Ordenacao otimizada */
            for(i = 0; i < n-1; i++) {
                for(j = i+1; j < n; j++) {
                    if(nodes[i]->freq > nodes[j]->freq) {
@@ -649,174 +752,288 @@ method DecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Funcao principal de compressao */
-   HB_FUNC( HB_HUFFMAN_PACK )
+   HB_FUNC_STATIC( HB_HUFFMAN_PACK )
    {
-       if(hb_parclen(1) == 0) {
-           hb_retc("");
-           return;
-       }
+      PHB_ITEM pInput = hb_param(1, HB_IT_STRING);
 
-       const unsigned char* input = (unsigned char*)hb_parc(1);
-       HB_SIZE input_len = hb_parclen(1);
-       int i;
+      if( !pInput )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* 1. Contar frequencias */
-       int freq[256];
-       count_freq(input, input_len, freq);
+      const unsigned char* input = (unsigned char*) hb_itemGetCPtr(pInput);
+      HB_SIZE input_len = hb_itemGetCLen(pInput);
 
-       /* 2. Construir arvore */
-       HUFFMAN_NODE* root = build_tree(freq);
-       if(root == NULL) {
-           hb_retc("");
-           return;
-       }
+      if( input_len == 0 )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* 3. Gerar codigos */
-       HUFFMAN_CODE codes[256];
-       char buffer[256];
-       for(i = 0; i < 256; i++) {
-           codes[i].len = 0;
-           codes[i].code[0] = '\0';
-       }
+      /* Limite de entrada */
+      if( input_len > MAX_INPUT_SIZE )
+      {
+         hb_retc("");
+         return;
+      }
 
-       generate_codes(root, codes, buffer, 0);
+      int i;
+      int freq[256];
 
-       /* 4. Serializar arvore */
-       int tree_len = tree_size(root);
-       unsigned char* tree_buf = (unsigned char*)hb_xgrab(tree_len);
-       int tree_pos = 0;
-       tree_pos = serialize_tree(root, tree_buf, 0);
+      /* 1. Contar frequencias */
+      count_freq(input, input_len, freq);
 
-       /* 5. Codificar dados usando bit writer */
-       BIT_WRITER* bw = bit_writer_init((int)input_len);
+      /* Verificar dados para comprimir */
+      int unique_chars = 0;
+      for( i = 0; i < 256; i++ )
+      {
+         if( freq[i] > 0 ) unique_chars++;
+      }
 
-       for(i = 0; i < (int)input_len; i++) {
-           unsigned char ch = input[i];
-           if(codes[ch].len > 0) {
-               bit_writer_write_bits(bw, codes[ch].code, codes[ch].len);
-           }
-       }
-       bit_writer_finish(bw);
+      if( unique_chars == 0 )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* 6. Preparar buffer final */
-       int total_len = 8 + tree_len + bw->byte_pos;
-       unsigned char* output = (unsigned char*)hb_xgrab(total_len);
+      /* 2. Construir arvore */
+      HUFFMAN_NODE* root = build_tree(freq);
+      if( root == NULL )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* Header */
-       output[0] = (tree_len >> 8) & 0xFF;
-       output[1] = tree_len & 0xFF;
-       output[2] = (input_len >> 24) & 0xFF;
-       output[3] = (input_len >> 16) & 0xFF;
-       output[4] = (input_len >> 8) & 0xFF;
-       output[5] = input_len & 0xFF;
-       output[6] = (bw->byte_pos >> 8) & 0xFF;
-       output[7] = bw->byte_pos & 0xFF;
+      /* 3. Gerar codigos */
+      HUFFMAN_CODE codes[256];
+      char gen_buffer[256];
+      for( i = 0; i < 256; i++ )
+      {
+         codes[i].len = 0;
+         codes[i].code[0] = '\0';
+      }
 
-       /* arvore - CORREcaO: usar hb_xmemcpy */
-       hb_xmemcpy(output + 8, tree_buf, tree_len);
+      generate_codes(root, codes, gen_buffer, 0);
 
-       /* Dados comprimidos - CORREcaO: usar hb_xmemcpy */
-       hb_xmemcpy(output + 8 + tree_len, bw->data, bw->byte_pos);
+      /* 4. Serializar arvore */
+      int tree_len = tree_size(root);
+      if( tree_len <= 0 || tree_len > MAX_TREE_SIZE )
+      {
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
 
-       /* Retornar resultado */
-       hb_retclen((char*)output, total_len);
+      unsigned char* tree_buf = (unsigned char*) hb_xgrab(tree_len);
+      if( !tree_buf )
+      {
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
 
-       /* Limpeza */
-       hb_xfree(tree_buf);
-       bit_writer_free(bw);
-       hb_xfree(output);
-       free_tree(root);
+      int tree_pos = 0;
+      tree_pos = serialize_tree(root, tree_buf, 0);
+
+      /* 5. Codificar dados */
+      BIT_WRITER* bw = bit_writer_init((int) input_len + 256);
+      if( !bw )
+      {
+         hb_xfree(tree_buf);
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
+
+      for( i = 0; i < (int) input_len; i++ )
+      {
+         unsigned char ch = input[i];
+         if( codes[ch].len > 0 && codes[ch].len < 256 )
+         {
+            bit_writer_write_bits(bw, codes[ch].code, codes[ch].len);
+         }
+      }
+      bit_writer_finish(bw);
+
+      /* 6. Preparar buffer final */
+      int total_len = 8 + tree_len + bw->byte_pos;
+
+      if( total_len <= 8 || total_len > MAX_COMPRESSED_SIZE )
+      {
+         hb_xfree(tree_buf);
+         bit_writer_free(bw);
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
+
+      unsigned char* output = (unsigned char*) hb_xgrab(total_len);
+      if( !output )
+      {
+         hb_xfree(tree_buf);
+         bit_writer_free(bw);
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
+
+      /* Header */
+      output[0] = (tree_len >> 8) & 0xFF;
+      output[1] = tree_len & 0xFF;
+      output[2] = (input_len >> 24) & 0xFF;
+      output[3] = (input_len >> 16) & 0xFF;
+      output[4] = (input_len >> 8) & 0xFF;
+      output[5] = input_len & 0xFF;
+      output[6] = (bw->byte_pos >> 8) & 0xFF;
+      output[7] = bw->byte_pos & 0xFF;
+
+      hb_xmemcpy(output + 8, tree_buf, tree_len);
+      hb_xmemcpy(output + 8 + tree_len, bw->data, bw->byte_pos);
+
+      hb_retclen((char*) output, total_len);
+
+      /* Limpeza */
+      hb_xfree(tree_buf);
+      bit_writer_free(bw);
+      hb_xfree(output);
+      free_tree(root);
    }
 
    /* Funcao principal de descompressao */
-   HB_FUNC( HB_HUFFMAN_UNPACK )
+   HB_FUNC_STATIC( HB_HUFFMAN_UNPACK )
    {
-       if(hb_parclen(1) == 0) {
-           hb_retc("");
-           return;
-       }
+      PHB_ITEM pInput = hb_param(1, HB_IT_STRING);
 
-       const unsigned char* input = (unsigned char*)hb_parc(1);
-       HB_SIZE input_len = hb_parclen(1);
+      if( !pInput )
+      {
+         hb_retc("");
+         return;
+      }
 
-       if(input_len < 8) {
-           hb_retc("");
-           return;
-       }
+      const unsigned char* input = (unsigned char*) hb_itemGetCPtr(pInput);
+      HB_SIZE input_len = hb_itemGetCLen(pInput);
 
-       /* Extrair header */
-       int tree_len = (input[0] << 8) | input[1];
-       HB_SIZE orig_len = ((HB_SIZE)input[2] << 24) |
-                         ((HB_SIZE)input[3] << 16) |
-                         ((HB_SIZE)input[4] << 8) |
-                         input[5];
-       int data_len = (input[6] << 8) | input[7];
+      if( input_len == 0 || input_len < 8 )
+      {
+         hb_retc("");
+         return;
+      }
 
-       if(8 + tree_len + data_len > (int)input_len) {
-           hb_retc("");
-           return;
-       }
+      /* Extrair header */
+      int tree_len = (input[0] << 8) | input[1];
+      HB_SIZE orig_len = ((HB_SIZE)input[2] << 24) |
+                        ((HB_SIZE)input[3] << 16) |
+                        ((HB_SIZE)input[4] << 8) |
+                        input[5];
+      int data_len = (input[6] << 8) | input[7];
 
-       /* 1. Deserializar arvore */
-       int tree_pos = 8;
-       int max_tree_pos = 8 + tree_len;
-       HUFFMAN_NODE* root = deserialize_tree(input, &tree_pos, max_tree_pos);
-       if(root == NULL) {
-           hb_retc("");
-           return;
-       }
+      /* Verificacoes */
+      if( tree_len <= 0 || tree_len > MAX_TREE_SIZE )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* 2. Preparar bit reader */
-       const unsigned char* compressed_data = input + 8 + tree_len;
-       BIT_READER* br = bit_reader_init(compressed_data, data_len);
+      if( data_len < 0 || data_len > MAX_COMPRESSED_SIZE )
+      {
+         hb_retc("");
+         return;
+      }
 
-       /* 3. Decodificar dados */
-       unsigned char* output = (unsigned char*)hb_xgrab(orig_len + 1);
-       if(output == NULL) {
-           bit_reader_free(br);
-           free_tree(root);
-           hb_retc("");
-           return;
-       }
+      HB_SIZE required_len = 8 + (HB_SIZE)tree_len + (HB_SIZE)data_len;
+      if( required_len > input_len || required_len < 8 )
+      {
+         hb_retc("");
+         return;
+      }
 
-       HUFFMAN_NODE* current = root;
-       HB_SIZE out_pos = 0;
+      if( orig_len == 0 || orig_len > MAX_OUTPUT_SIZE )
+      {
+         hb_retc("");
+         return;
+      }
 
-       while(out_pos < orig_len) {
-           int bit = bit_reader_read(br);
-           if(bit < 0) break;
+      /* 1. Deserializar arvore */
+      int tree_pos = 8;
+      int max_tree_pos = 8 + tree_len;
 
-           if(bit == 0) {
-               current = current->left;
-           } else {
-               current = current->right;
-           }
+      HUFFMAN_NODE* root = deserialize_tree(input, &tree_pos, max_tree_pos);
+      if( root == NULL )
+      {
+         hb_retc("");
+         return;
+      }
 
-           if(current == NULL) {
-               break;
-           }
+      /* 2. Preparar bit reader */
+      const unsigned char* compressed_data = input + 8 + tree_len;
 
-           if(current->left == NULL && current->right == NULL) {
-               output[out_pos++] = current->ch;
-               current = root;
-           }
-       }
+      BIT_READER* br = bit_reader_init(compressed_data, data_len);
+      if( !br )
+      {
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
 
-       output[out_pos] = '\0';
+      /* 3. Decodificar dados */
+      unsigned char* output = (unsigned char*) hb_xgrab(orig_len + 1);
+      if( output == NULL )
+      {
+         bit_reader_free(br);
+         free_tree(root);
+         hb_retc("");
+         return;
+      }
 
-       if(out_pos != orig_len) {
-           hb_xfree(output);
-           bit_reader_free(br);
-           free_tree(root);
-           hb_retc("");
-           return;
-       }
+      HB_SIZE out_pos = 0;
 
-       hb_retclen((char*)output, orig_len);
+      if(root != NULL && root->left == NULL && root->right == NULL) {
+          /* Caso especial: apenas um simbolo unico */
+          for(HB_SIZE i = 0; i < orig_len; i++) {
+              output[i] = root->ch;
+          }
+          out_pos = orig_len;
+      } else {
+          HUFFMAN_NODE* current = root;
+          int bit;
 
-       hb_xfree(output);
-       bit_reader_free(br);
-       free_tree(root);
+          while(out_pos < orig_len) {
+              bit = bit_reader_read(br);
+              if(bit < 0) {
+                  break;
+              }
+
+              if(bit == 0) {
+                  current = current->left;
+              } else {
+                  current = current->right;
+              }
+
+              if(current == NULL) {
+                  break;
+              }
+
+              if(current->left == NULL && current->right == NULL) {
+                  output[out_pos++] = current->ch;
+                  current = root;
+              }
+          }
+      }
+
+      output[out_pos] = '\0';
+
+      if(out_pos == orig_len) {
+          hb_retclen((char*) output, orig_len);
+      } else if(out_pos > 0) {
+          hb_retclen((char*) output, out_pos);
+      } else {
+          hb_retc("");
+      }
+
+      hb_xfree(output);
+      bit_reader_free(br);
+      free_tree(root);
    }
 
 #pragma ENDDUMP

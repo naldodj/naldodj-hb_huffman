@@ -5,3 +5,4 @@ _commit.txt
 *.log*
 *.sh256
 src/tst/huffmannode_tst.sh256
+/src/tst/log
