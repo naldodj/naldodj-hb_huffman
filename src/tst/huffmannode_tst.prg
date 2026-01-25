@@ -167,7 +167,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       nLenTextCompressed:=hb_bLen(cTextcCompressed)
       cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cTextcCompressed)
       nLenCompressed:=hb_bLen(cCompressed)
-      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompressToBinary.log"
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompressToBinaryFromHuffmanCompress.log"
       hb_MemoWrit(cLogFile,cCompressed)
       ? "Tamanho Original: ", nLenTextCompressed
       LOG "Tamanho Original: "+hb_NToC(nLenTextCompressed) PRIORITY nSeverity
@@ -180,7 +180,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
 
       cDecompressed:=oHuffmanNode:HuffmanDecompressFromBinary(cCompressed)
       nLenDecompressed:=hb_BLen(cDecompressed)
-      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompressFromBinary.log"
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompressFromBinaryFromHuffmanCompress.log"
       hb_MemoWrit(cLogFile,cDecompressed)
       *? "Descomprimido: ", cDecompressed
       LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
