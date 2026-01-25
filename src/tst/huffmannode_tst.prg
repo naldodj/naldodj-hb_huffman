@@ -121,8 +121,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
           SetColor("r+/n")
       endif
 
-      ? "Matching: ",(cDecompressed==cText),hb_eol(),hb_eol()
-      LOG "Matching: "+if((cDecompressed==cText),"TRUE","FALSE") PRIORITY nSeverity
+      ? "Matching: ",lMatch,hb_eol(),hb_eol()
+      LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
       SetColor("")
 
@@ -154,8 +154,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
           SetColor("r+/n")
       endif
 
-      ? "Matching: ",(cDecompressed==cText),hb_eol(),hb_eol()
-      LOG "Matching: "+if((cDecompressed==cText),"TRUE","FALSE") PRIORITY nSeverity
+      ? "Matching: ",lMatch,hb_eol(),hb_eol()
+      LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
       SetColor("")
 
