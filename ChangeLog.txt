@@ -5,6 +5,10 @@
    (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Add binary Huffman compression and logging to tests)"
 */
 
+2026-01-25 00:32 UTC naldodj (Add binary Huffman compression and logging to tests)
+  + src/tst/go64.bat
+  + src/tst/huffmannode_tst.sh256
+
 2026-01-25 00:30 UTC naldodj (Add binary Huffman compression and logging to tests)
   Introduces new CompressToBinary and DecompressFromBinary methods to HuffmanNode with C implementations for efficient binary Huffman compression and decompression.
   Updates the test suite to log results, compression ratios, and matching status using a rotating log file.
