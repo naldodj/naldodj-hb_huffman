@@ -22,11 +22,14 @@
 #include "hblog.ch"
 #include "hbinkey.ch"
 #include "hbcompat.ch"
+#include "directry.ch"
 
 REQUEST HB_CODEPAGE_UTF8EX
 
 // Example usage
 procedure Main()
+
+   local aLogs as array
 
    local cCDP as character
    local cLogFile as character:=("huffmannode_tst.log")
@@ -42,6 +45,9 @@ procedure Main()
      AltD(1)         // Enables the debugger. Press F5 to continue.
      AltD()          // Invokes the debugger
    #endif
+
+   aLogs:=Directory("*.log*")
+   aEval(aLogs,{|e|hb_FileDelete(e[F_NAME])})
 
    cCDP:=hb_cdpSelect("UTF8EX")
 
