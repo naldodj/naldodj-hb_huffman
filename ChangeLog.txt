@@ -2,8 +2,13 @@
      * Change  ! Fix  % Optimize  + Add  - Remove  ; Comment
    Entries may not always be in chronological/commit order.
    See license at the end of file.
-   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Update Huffman test: fix logging, add SHA256 output)"
+   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Update SHA256 hash for huffmannode_tst.exe)"
 */
+
+2026-01-25 01:14 UTC naldodj (Update SHA256 hash for huffmannode_tst.exe  )
+  Update SHA256 hash for huffmannode_tst.exe
+    Replaced huffmannode_tst.sh256 with huffmannode_tst.sha256 and updated the hash value to reflect the latest build.
+      - src/tst/huffmannode_tst.sh256
 
 2026-01-25 01:11 UTC naldodj (Update Huffman test: fix logging, add SHA256 output)
   Update Huffman test: fix logging, add SHA256 output
