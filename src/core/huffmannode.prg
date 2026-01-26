@@ -286,30 +286,39 @@ method UnpackBitsFromIntegers(aPacked as array) class HuffmanNode
 /* Metodos novos para compressao binaria */
 method HuffmanCompressToBinary(cText as character) class HuffmanNode
 
-   local aBinary as array:=Array(0)
+   local aBinary as array
+
    local cChunk as character
-   local nPos as numeric:=1
-   local nLen as numeric:=hb_BLen(cText)
-   local nChunkSize as numeric:=32768  // 32KB por pacote para melhor compressao
+
+   local nPos as numeric
+   local nLen as numeric
+   local nChunkSize as numeric
 
    if (Empty(cText))
       return("")
    endif
 
+   aBinary:=Array(0)
+
+   nPos:=1
+   nLen:=hb_BLen(cText)
+   nChunkSize:=32768  // 32KB por pacote para melhor compressao
+
    // Dividir o texto em chunks otimizados
    while (nPos <= nLen)
-      if (nPos + nChunkSize - 1 > nLen)
-         nChunkSize := nLen - nPos + 1
+      if (((nPos+nChunkSize)-1)>nLen)
+         nChunkSize:=((nLen-nPos)+1)
       endif
 
-      cChunk := hb_BSubStr(cText, nPos, nChunkSize)
-      cChunk := HB_HUFFMAN_PACK(cChunk)
+      cChunk:=hb_BSubStr(cText,nPos,nChunkSize)
+      cChunk:=HB_HUFFMAN_PACK(cChunk)
 
       if (!Empty(cChunk))
-         aAdd(aBinary, cChunk)
+         aAdd(aBinary,cChunk)
       endif
 
-      nPos += nChunkSize
+      nPos+=nChunkSize
+
    end while
 
    return(hb_Serialize(aBinary))
@@ -317,6 +326,7 @@ method HuffmanCompressToBinary(cText as character) class HuffmanNode
 method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
 
    local aBinary as array
+
    local cChunk as character
    local cText as character:=""
 
@@ -325,9 +335,9 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    endif
 
    aBinary:=hb_DeSerialize(cBinary)
-   FOR EACH cChunk IN aBinary
-      cText += HB_HUFFMAN_UNPACK(cChunk)
-   NEXT
+   for each cChunk IN aBinary
+      cText+=HB_HUFFMAN_UNPACK(cChunk)
+   next //each
 
    return(cText)
 
@@ -340,17 +350,17 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    #include <stdlib.h>
    #include <limits.h>
 
-   /* Para strcpy_s no Windows, strncpy no Linux */
+   /* Para strcpy_s no Windows,strncpy no Linux */
    #ifdef _WIN32
-     #define STRCPY_SAFE(dest, src) strcpy_s(dest, sizeof(dest), src)
+     #define STRCPY_SAFE(dest,src) strcpy_s(dest,sizeof(dest),src)
    #else
-     #define STRCPY_SAFE(dest, src) strncpy(dest, src, sizeof(dest)-1); dest[sizeof(dest)-1] = '\0'
+     #define STRCPY_SAFE(dest,src) strncpy(dest,src,sizeof(dest)-1); dest[sizeof(dest)-1] = '\0'
    #endif
 
    HB_FUNC_STATIC(STROCCURS)
    {
-      PHB_ITEM pText1 = hb_param(1, HB_IT_STRING);
-      PHB_ITEM pText2 = hb_param(2, HB_IT_STRING);
+      PHB_ITEM pText1 = hb_param(1,HB_IT_STRING);
+      PHB_ITEM pText2 = hb_param(2,HB_IT_STRING);
 
       if( pText1 && pText2 && HB_ISBYREF(2) )
       {
@@ -364,7 +374,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
          char *tempBuffer = (char*) hb_xgrab(len + 1);
          if( !tempBuffer )
          {
-            hb_errRT_BASE_SubstR(EG_MEM, 3012, NULL, "STROCCURS", HB_ERR_ARGS_BASEPARAMS);
+            hb_errRT_BASE_SubstR(EG_MEM,3012,NULL,"STROCCURS",HB_ERR_ARGS_BASEPARAMS);
             return;
          }
 
@@ -380,11 +390,11 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
          /* Atualizar string de referencia */
          if( newLen > 0 )
          {
-            hb_storclen(tempBuffer, newLen, 2);
+            hb_storclen(tempBuffer,newLen,2);
          }
          else
          {
-            hb_storc("", 2);
+            hb_storc("",2);
          }
 
          hb_xfree(tempBuffer);
@@ -392,20 +402,20 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       }
       else
       {
-         hb_errRT_BASE_SubstR(EG_ARG, 3012, NULL, "STROCCURS", HB_ERR_ARGS_BASEPARAMS);
+         hb_errRT_BASE_SubstR(EG_ARG,3012,NULL,"STROCCURS",HB_ERR_ARGS_BASEPARAMS);
       }
    }
 
    HB_FUNC_STATIC(PACKBITSTOINTEGERS)
    {
-      PHB_ITEM pBits = hb_param(1, HB_IT_STRING);
-      PHB_ITEM pBitLen = hb_param(2, HB_IT_NUMERIC);
+      PHB_ITEM pBits = hb_param(1,HB_IT_STRING);
+      PHB_ITEM pBitLen = hb_param(2,HB_IT_NUMERIC);
 
       if( pBits && pBitLen )
       {
          const char *cBits = hb_itemGetCPtr(pBits);
          long nBitLen = hb_itemGetNL(pBitLen);
-         HB_ISIZ i, bufferLen = 0;
+         HB_ISIZ i,bufferLen = 0;
          HB_MAXUINT buffer = 0;
          HB_ISIZ arraySize = (nBitLen + 63) / 64 + 1;
 
@@ -413,25 +423,25 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
          HB_ISIZ actualLen = hb_itemGetCLen(pBits);
          if( (HB_ISIZ) nBitLen > actualLen )
          {
-            hb_errRT_BASE_SubstR(EG_BOUND, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+            hb_errRT_BASE_SubstR(EG_BOUND,3012,NULL,"PACKBITSTOINTEGERS",HB_ERR_ARGS_BASEPARAMS);
             return;
          }
 
          PHB_ITEM aOut = hb_itemArrayNew(arraySize);
          if( !aOut )
          {
-            hb_errRT_BASE_SubstR(EG_MEM, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+            hb_errRT_BASE_SubstR(EG_MEM,3012,NULL,"PACKBITSTOINTEGERS",HB_ERR_ARGS_BASEPARAMS);
             return;
          }
 
-         hb_arraySetNL(aOut, 1, nBitLen);
+         hb_arraySetNL(aOut,1,nBitLen);
 
          for( i = 0; i < nBitLen; i++ )
          {
             buffer = (buffer << 1) | (cBits[i] == '1' ? 1 : 0);
             if( ++bufferLen >= 64 )
             {
-               hb_arraySetNInt(aOut, (i / 64) + 2, buffer);
+               hb_arraySetNInt(aOut,(i / 64) + 2,buffer);
                buffer = 0;
                bufferLen = 0;
             }
@@ -439,14 +449,14 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
 
          if( bufferLen > 0 )
          {
-            hb_arraySetNInt(aOut, (nBitLen / 64) + 2, buffer << (64 - bufferLen));
+            hb_arraySetNInt(aOut,(nBitLen / 64) + 2,buffer << (64 - bufferLen));
          }
 
          hb_itemReturnRelease(aOut);
       }
       else
       {
-         hb_errRT_BASE_SubstR(EG_ARG, 3012, NULL, "PACKBITSTOINTEGERS", HB_ERR_ARGS_BASEPARAMS);
+         hb_errRT_BASE_SubstR(EG_ARG,3012,NULL,"PACKBITSTOINTEGERS",HB_ERR_ARGS_BASEPARAMS);
       }
    }
 
@@ -508,7 +518,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
        bw->byte_pos = 0;
        bw->capacity = capacity;
 
-       hb_xmemset(bw->data, 0, capacity);
+       hb_xmemset(bw->data,0,capacity);
        return bw;
    }
 
@@ -521,7 +531,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Escreve um bit */
-   static void bit_writer_write(BIT_WRITER* bw, int bit) {
+   static void bit_writer_write(BIT_WRITER* bw,int bit) {
        if(bw->byte_pos >= bw->capacity) {
            /* Expande buffer */
            int new_capacity = bw->capacity * 2;
@@ -536,8 +546,8 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
            unsigned char* new_data = (unsigned char*)hb_xgrab(new_capacity);
            if( !new_data ) return;
 
-           hb_xmemcpy(new_data, bw->data, bw->capacity);
-           hb_xmemset(new_data + bw->capacity, 0, new_capacity - bw->capacity);
+           hb_xmemcpy(new_data,bw->data,bw->capacity);
+           hb_xmemset(new_data + bw->capacity,0,new_capacity - bw->capacity);
 
            hb_xfree(bw->data);
            bw->data = new_data;
@@ -556,10 +566,10 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Escreve multiplos bits */
-   static void bit_writer_write_bits(BIT_WRITER* bw, const char* bits, int len) {
+   static void bit_writer_write_bits(BIT_WRITER* bw,const char* bits,int len) {
        int i;
        for(i = 0; i < len; i++) {
-           bit_writer_write(bw, bits[i] == '1' ? 1 : 0);
+           bit_writer_write(bw,bits[i] == '1' ? 1 : 0);
        }
    }
 
@@ -571,7 +581,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Inicializa bit reader */
-   static BIT_READER* bit_reader_init(const unsigned char* data, int max_bytes) {
+   static BIT_READER* bit_reader_init(const unsigned char* data,int max_bytes) {
        BIT_READER* br = (BIT_READER*)hb_xgrab(sizeof(BIT_READER));
        br->data = data;
        br->bit_pos = 0;
@@ -624,14 +634,14 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Conta frequencias */
-   static void count_freq(const unsigned char* data, HB_SIZE len, int* freq) {
+   static void count_freq(const unsigned char* data,HB_SIZE len,int* freq) {
        HB_SIZE i;
        for(i = 0; i < 256; i++) freq[i] = 0;
        for(i = 0; i < len; i++) freq[data[i]]++;
    }
 
    /* Funcao auxiliar: cria no */
-   static HUFFMAN_NODE* create_node(unsigned char ch, int freq) {
+   static HUFFMAN_NODE* create_node(unsigned char ch,int freq) {
        HUFFMAN_NODE* node = (HUFFMAN_NODE*)hb_xgrab(sizeof(HUFFMAN_NODE));
        if(node != NULL) {
            node->ch = ch;
@@ -644,12 +654,12 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    /* Constroi arvore Huffman otimizada */
    static HUFFMAN_NODE* build_tree(int* freq) {
        HUFFMAN_NODE* nodes[256];
-       HUFFMAN_NODE* left, *right, *parent;
-       int i, j, n = 0;
+       HUFFMAN_NODE* left,*right,*parent;
+       int i,j,n = 0;
 
        for(i = 0; i < 256; i++) {
            if(freq[i] > 0) {
-               nodes[n++] = create_node((unsigned char)i, freq[i]);
+               nodes[n++] = create_node((unsigned char)i,freq[i]);
                if( n >= 256 ) break;
            }
        }
@@ -671,7 +681,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
 
            left = nodes[0];
            right = nodes[1];
-           parent = create_node(0, left->freq + right->freq);
+           parent = create_node(0,left->freq + right->freq);
            parent->left = left;
            parent->right = right;
 
@@ -686,29 +696,29 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Gera codigos Huffman */
-   static void generate_codes(HUFFMAN_NODE* node, HUFFMAN_CODE* codes, char* buffer, int depth) {
+   static void generate_codes(HUFFMAN_NODE* node,HUFFMAN_CODE* codes,char* buffer,int depth) {
        if(node == NULL) return;
 
        if(depth >= 255) return;
 
        if(node->left == NULL && node->right == NULL) {
            buffer[depth] = '\0';
-           STRCPY_SAFE(codes[node->ch].code, buffer);
+           STRCPY_SAFE(codes[node->ch].code,buffer);
            codes[node->ch].len = depth;
        } else {
            if(node->left != NULL) {
                buffer[depth] = '0';
-               generate_codes(node->left, codes, buffer, depth + 1);
+               generate_codes(node->left,codes,buffer,depth + 1);
            }
            if(node->right != NULL) {
                buffer[depth] = '1';
-               generate_codes(node->right, codes, buffer, depth + 1);
+               generate_codes(node->right,codes,buffer,depth + 1);
            }
        }
    }
 
    /* Serializa arvore */
-   static int serialize_tree(HUFFMAN_NODE* node, unsigned char* buf, int pos) {
+   static int serialize_tree(HUFFMAN_NODE* node,unsigned char* buf,int pos) {
        if(node == NULL) return pos;
 
        if(node->left == NULL && node->right == NULL) {
@@ -716,8 +726,8 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
            buf[pos++] = node->ch;
        } else {
            buf[pos++] = 0;
-           pos = serialize_tree(node->left, buf, pos);
-           pos = serialize_tree(node->right, buf, pos);
+           pos = serialize_tree(node->left,buf,pos);
+           pos = serialize_tree(node->right,buf,pos);
        }
 
        return pos;
@@ -731,20 +741,20 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    }
 
    /* Deserializa arvore */
-   static HUFFMAN_NODE* deserialize_tree(const unsigned char* buf, int* pos, int max_pos) {
+   static HUFFMAN_NODE* deserialize_tree(const unsigned char* buf,int* pos,int max_pos) {
        if(*pos >= max_pos) return NULL;
 
        if(buf[*pos] == 1) {
            (*pos)++;
            if(*pos >= max_pos) return NULL;
-           HUFFMAN_NODE* node = create_node(buf[*pos], 0);
+           HUFFMAN_NODE* node = create_node(buf[*pos],0);
            (*pos)++;
            return node;
        } else if(buf[*pos] == 0) {
            (*pos)++;
-           HUFFMAN_NODE* node = create_node(0, 0);
-           node->left = deserialize_tree(buf, pos, max_pos);
-           node->right = deserialize_tree(buf, pos, max_pos);
+           HUFFMAN_NODE* node = create_node(0,0);
+           node->left = deserialize_tree(buf,pos,max_pos);
+           node->right = deserialize_tree(buf,pos,max_pos);
            return node;
        }
 
@@ -754,7 +764,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    /* Funcao principal de compressao */
    HB_FUNC_STATIC( HB_HUFFMAN_PACK )
    {
-      PHB_ITEM pInput = hb_param(1, HB_IT_STRING);
+      PHB_ITEM pInput = hb_param(1,HB_IT_STRING);
 
       if( !pInput )
       {
@@ -782,7 +792,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       int freq[256];
 
       /* 1. Contar frequencias */
-      count_freq(input, input_len, freq);
+      count_freq(input,input_len,freq);
 
       /* Verificar dados para comprimir */
       int unique_chars = 0;
@@ -814,7 +824,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
          codes[i].code[0] = '\0';
       }
 
-      generate_codes(root, codes, gen_buffer, 0);
+      generate_codes(root,codes,gen_buffer,0);
 
       /* 4. Serializar arvore */
       int tree_len = tree_size(root);
@@ -834,7 +844,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       }
 
       int tree_pos = 0;
-      tree_pos = serialize_tree(root, tree_buf, 0);
+      tree_pos = serialize_tree(root,tree_buf,0);
 
       /* 5. Codificar dados */
       BIT_WRITER* bw = bit_writer_init((int) input_len + 256);
@@ -851,7 +861,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
          unsigned char ch = input[i];
          if( codes[ch].len > 0 && codes[ch].len < 256 )
          {
-            bit_writer_write_bits(bw, codes[ch].code, codes[ch].len);
+            bit_writer_write_bits(bw,codes[ch].code,codes[ch].len);
          }
       }
       bit_writer_finish(bw);
@@ -888,10 +898,10 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       output[6] = (bw->byte_pos >> 8) & 0xFF;
       output[7] = bw->byte_pos & 0xFF;
 
-      hb_xmemcpy(output + 8, tree_buf, tree_len);
-      hb_xmemcpy(output + 8 + tree_len, bw->data, bw->byte_pos);
+      hb_xmemcpy(output + 8,tree_buf,tree_len);
+      hb_xmemcpy(output + 8 + tree_len,bw->data,bw->byte_pos);
 
-      hb_retclen((char*) output, total_len);
+      hb_retclen((char*) output,total_len);
 
       /* Limpeza */
       hb_xfree(tree_buf);
@@ -903,7 +913,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
    /* Funcao principal de descompressao */
    HB_FUNC_STATIC( HB_HUFFMAN_UNPACK )
    {
-      PHB_ITEM pInput = hb_param(1, HB_IT_STRING);
+      PHB_ITEM pInput = hb_param(1,HB_IT_STRING);
 
       if( !pInput )
       {
@@ -958,7 +968,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       int tree_pos = 8;
       int max_tree_pos = 8 + tree_len;
 
-      HUFFMAN_NODE* root = deserialize_tree(input, &tree_pos, max_tree_pos);
+      HUFFMAN_NODE* root = deserialize_tree(input,&tree_pos,max_tree_pos);
       if( root == NULL )
       {
          hb_retc("");
@@ -968,7 +978,7 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       /* 2. Preparar bit reader */
       const unsigned char* compressed_data = input + 8 + tree_len;
 
-      BIT_READER* br = bit_reader_init(compressed_data, data_len);
+      BIT_READER* br = bit_reader_init(compressed_data,data_len);
       if( !br )
       {
          free_tree(root);
@@ -1024,9 +1034,9 @@ method HuffmanDecompressFromBinary(cBinary as character) class HuffmanNode
       output[out_pos] = '\0';
 
       if(out_pos == orig_len) {
-          hb_retclen((char*) output, orig_len);
+          hb_retclen((char*) output,orig_len);
       } else if(out_pos > 0) {
-          hb_retclen((char*) output, out_pos);
+          hb_retclen((char*) output,out_pos);
       } else {
           hb_retc("");
       }

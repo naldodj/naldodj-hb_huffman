@@ -81,7 +81,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
    local cFunName as character
    local cCompressed as character
    local cDecompressed as character
-   local cTextcCompressed as character
+   local cTextCompressed as character
 
    local hCompressed as hash
 
@@ -116,6 +116,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       SetColor(aColors[i])
       QOut("=== Test "+hb_NToC(i)+" ("+cFunName+"): ===",cEOL)
       SetColor("") /* Reset color to default */
+
+      /*========================================================================*/
 
       hCompressed:=oHuffmanNode:HuffmanCompress(cText)
       cCompressed:=hb_JSONEncode(hCompressed)
@@ -157,15 +159,14 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
 
-      ? Replicate("=",80),cEOL
-      LOG Replicate("=",80) PRIORITY nSeverity
+      /*========================================================================*/
 
       ? "Compress From HuffmanCompress: ("+cFunName+")"
       LOG "Compress From HuffmanCompress: ("+cFunName+")" PRIORITY nSeverity
 
-      cTextcCompressed:=cCompressed
-      nLenTextCompressed:=hb_bLen(cTextcCompressed)
-      cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cTextcCompressed)
+      cTextCompressed:=cCompressed
+      nLenTextCompressed:=hb_bLen(cTextCompressed)
+      cCompressed:=oHuffmanNode:HuffmanCompressToBinary(cTextCompressed)
       nLenCompressed:=hb_bLen(cCompressed)
       cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanCompressToBinaryFromHuffmanCompress.log"
       hb_MemoWrit(cLogFile,cCompressed)
@@ -186,7 +187,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
       ? "hb_bLen(cDecompressed): ",nLenDecompressed
 
-      lMatch:=(cDecompressed==cTextcCompressed)
+      lMatch:=(cDecompressed==cTextCompressed)
 
       if (lMatch)
           SetColor("g+/n")
@@ -197,10 +198,32 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
-      SetColor("")
+      /*========================================================================*/
 
-      ? Replicate("=",80),cEOL
-      LOG Replicate("=",80) PRIORITY nSeverity
+      hCompressed:=hb_JSONDecode(cDecompressed)
+      cDecompressed:=oHuffmanNode:HuffmanDecompress(hCompressed)
+      nLenDecompressed:=hb_bLen(cDecompressed)
+      cLogFile:="."+cPS+"log"+cPS+cFunName+"_HuffmanDecompressHuffmanDecompressFromBinaryFromHuffmanCompress.log"
+      hb_MemoWrit(cLogFile,cDecompressed)
+
+      *? "Descomprimido: ", cDecompressed
+      LOG "Descomprimido: "+cDecompressed PRIORITY nSeverity
+      ? "hb_bLen(cDecompressed): ",nLenDecompressed
+
+      lMatch:=((lMatch).and.(cDecompressed==cText))
+
+      if (lMatch)
+          SetColor("g+/n")
+      else
+          SetColor("r+/n")
+      endif
+
+      ? "Matching: ",lMatch,cEOL,cEOL
+      LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
+
+      /*========================================================================*/
+
+      SetColor("")
 
       ? "CompressToBinary: ("+cFunName+")"
       LOG "CompressToBinary: ("+cFunName+")" PRIORITY nSeverity
