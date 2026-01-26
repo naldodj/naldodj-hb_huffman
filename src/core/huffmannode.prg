@@ -306,6 +306,7 @@ method HuffmanCompressToBinary(cText as character) class HuffmanNode
 
    // Dividir o texto em chunks otimizados
    while (nPos <= nLen)
+
       if (((nPos+nChunkSize)-1)>nLen)
          nChunkSize:=((nLen-nPos)+1)
       endif
