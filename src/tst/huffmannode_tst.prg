@@ -31,8 +31,10 @@ procedure Main()
 
    local aLogs as array
 
+   local cPS as character:=hb_ps()
    local cCDP as character
-   local cLogFile as character:=(".\log\huffmannode_tst.log")
+   local cLogDir as character:=("."+cPS+"log"+cPS)
+   local cLogFile as character:=(cLogDir+"huffmannode_tst.log")
 
    local nKoef as numeric
    local nStyle as numeric:=(HB_LOG_ST_DATE+HB_LOG_ST_ISODATE+HB_LOG_ST_TIME+HB_LOG_ST_LEVEL)
@@ -45,10 +47,10 @@ procedure Main()
      AltD()         // Invokes the debugger
    #endif
 
-   hb_DirCreate(".\log\")
+   hb_DirCreate(cLogDir)
 
-   aLogs:=Directory(".\log\*.*")
-   aEval(aLogs,{|e|hb_FileDelete(".\log\"+e[F_NAME])})
+   aLogs:=Directory(cLogDir+"*.*")
+   aEval(aLogs,{|e|hb_FileDelete(cLogDir+e[F_NAME])})
 
    cCDP:=hb_cdpSelect("UTF8EX")
 
