@@ -156,7 +156,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
-      SetColor("")
+      SetColor("") /* Reset color to default */
 
       ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
@@ -200,6 +200,8 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
+      SetColor("") /* Reset color to default */
+
       /*========================================================================*/
 
       hCompressed:=hb_JSONDecode(cDecompressed)
@@ -223,9 +225,9 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
-      /*========================================================================*/
+      SetColor("") /* Reset color to default */
 
-      SetColor("")
+      /*========================================================================*/
 
       ? "CompressToBinary: ("+cFunName+")"
       LOG "CompressToBinary: ("+cFunName+")" PRIORITY nSeverity
@@ -262,7 +264,7 @@ static procedure hbHuffmanTST(nSeverity as numeric)
       ? "Matching: ",lMatch,cEOL,cEOL
       LOG "Matching: "+if(lMatch,"TRUE","FALSE") PRIORITY nSeverity
 
-      SetColor("")
+      SetColor("") /* Reset color to default */
 
       ? Replicate("=",80),cEOL
       LOG Replicate("=",80) PRIORITY nSeverity
