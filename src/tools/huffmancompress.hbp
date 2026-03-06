@@ -1,0 +1,19 @@
+-w3 -es2
+
+-cpp
+
+# Bibliotecas essenciais
+xhb.hbc
+hbct.hbc
+{win}hbwin.hbc
+hbmzip.hbc
+
+{win}-lucrt
+
+{win}-ldflag=/NODEFAULTLIB:msvcrt
+{win}-ldflag+=/NODEFAULTLIB:libucrt
+
+./huffmannode.prg
+./huffmancompress.prg
+
+-o./${hb_name}

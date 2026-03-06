@@ -2,8 +2,19 @@
      * Change  ! Fix  % Optimize  + Add  - Remove  ; Comment
    Entries may not always be in chronological/commit order.
    See license at the end of file.
-   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Add comments to SetColor calls in HuffmanNode tests)"
+   (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm")+" UTC naldodj (Add huffmancompress tool)"
 */
+
+2026-03-06 10:34 UTC naldodj (Add huffmancompress tool)
+  Add huffmancompress tool
+    + src/tools/go64.bat
+    + src/tools/hbmk.hbm
+    + src/tools/huffmancompress.exe
+    + src/tools/huffmancompress.hbp
+    + src/tools/huffmancompress.sha256
+    + src/tools/huffmannode.prg
+    + src/tools/huffmancompress.prg
+    * src/tst/huffmannode_tst.prg
 
 2026-01-27 09:21 UTC naldodj (Add comments to SetColor calls in HuffmanNode tests)
   Add comments to SetColor calls in HuffmanNode tests

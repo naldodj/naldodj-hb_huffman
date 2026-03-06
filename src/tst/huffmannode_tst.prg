@@ -306,7 +306,7 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     return(cText)
 
-    static function hbHuffmanTST_03()
+static function hbHuffmanTST_03()
 
     local cText as character
 
@@ -318,7 +318,7 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     return(cText)
 
-    static function hbHuffmanTST_04()
+static function hbHuffmanTST_04()
 
     local cText as character
 
@@ -330,7 +330,7 @@ THIS TEXT VERY,VERY,VERY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTREMELY,VERY,EXTRE
 
     return(cText)
 
-    static function hbHuffmanTST_05()
+static function hbHuffmanTST_05()
 
     local cText as character
 
